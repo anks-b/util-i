@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Interest Calculator'),
     );
   }
 }
@@ -48,16 +48,15 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  String _fromDate = "";
-  TextEditingController fromDateControl =  TextEditingController();
-  TextEditingController toDateControl =  TextEditingController();
-  String _toDate = "";
-  DateTime _date = DateTime.now();
+  DateTime _fromDate = DateTime.now();
+  TextEditingController fromDateControl = TextEditingController();
+  TextEditingController toDateControl = TextEditingController();
+  DateTime _toDate = DateTime.now();
 
-  Future<String> _selectDate() async {
+  Future<DateTime?> _selectDate(DateTime? dt) async {
     final DateTime? newDate = await showDatePicker(
       context: context,
-      initialDate: _date,
+      initialDate: (dt != null ? dt : DateTime.now()),
       firstDate: DateTime(2017, 1),
       lastDate: DateTime(2022, 7),
       helpText: 'Select a date',
@@ -67,15 +66,23 @@ class _MyHomePageState extends State<MyHomePage> {
     //     newDate.toString();
     //   });
     // }
-    return newDate != null ? newDate.toString(): "";
+    return newDate;
   }
 
   void _setFromDate() async {
-   fromDateControl.text =  await _selectDate();
+    DateTime? dt = await _selectDate(_fromDate);
+    if (dt != null) {
+      _fromDate = dt;
+      fromDateControl.text = _fromDate.toString();
+    }
   }
 
   void _setToDate() async {
-    toDateControl.text =  await _selectDate();
+    DateTime? dt = await _selectDate(_toDate);
+    if (dt != null) {
+      _toDate = dt;
+      toDateControl.text = _toDate.toString();
+    }
   }
 
   void _incrementCounter() {
@@ -121,108 +128,97 @@ class _MyHomePageState extends State<MyHomePage> {
           // center the children vertically; the main axis here is the vertical
           // axis because Columns are vertical (the cross axis would be
           // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_fromDate',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-            TextFormField(             
+            TextFormField(
               maxLength: 20,
               onTap: _setFromDate,
               controller: fromDateControl,
               decoration: InputDecoration(
-                icon: Icon(Icons.favorite),
                 labelText: 'From Date',
                 labelStyle: TextStyle(
                   color: Color(0xFF6200EE),
                 ),
-                helperText: 'date on which day it is started',
+                border: OutlineInputBorder(),
                 suffixIcon: Icon(
                   Icons.check_circle,
                 ),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF6200EE)),
-                ),
               ),
             ),
-            TextFormField(             
+            TextFormField(
               controller: toDateControl,
-              maxLength: 20,             
+              maxLength: 20,
               onTap: _setToDate,
               decoration: InputDecoration(
-                icon: Icon(Icons.favorite),
                 labelText: 'To Date',
                 labelStyle: TextStyle(
                   color: Color(0xFF6200EE),
                 ),
-                helperText: 'date on which day it is ended',
+                border: OutlineInputBorder(),
                 suffixIcon: Icon(
                   Icons.check_circle,
                 ),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF6200EE)),
-                ),
               ),
             ),
-            TextFormField(
-              initialValue: '',
-              maxLength: 20,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
-                icon: Icon(Icons.favorite),
-                labelText: 'Amount',                
-                labelStyle: TextStyle(
-                  color: Color(0xFF6200EE),
-                ),
-                helperText: 'date on which day it is started',
-                suffixIcon: Icon(
-                  Icons.check_circle,
-                ),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF6200EE)),
+            Row(children: <Widget>[
+              Expanded(
+                child: TextFormField(
+                  initialValue: '',
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                      labelText: 'Amount',
+                      labelStyle: TextStyle(
+                        color: Color(0xFF6200EE),
+                      ),
+                      suffixIcon: Icon(
+                        Icons.check_circle,
+                      ),
+                      border: OutlineInputBorder()),
                 ),
               ),
-            ),
-            TextFormField(
-              initialValue: '',
-              maxLength: 20,              
-              keyboardType:TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.allow(RegExp(r'^(\d+)?\.?\d{0,2}'))
-      ],
-              decoration: InputDecoration(
-                icon: Icon(Icons.favorite),
-                labelText: 'Rate',
-                labelStyle: TextStyle(
-                  color: Color(0xFF6200EE),
-                ),
-                helperText: 'date on which day it is started',
-                suffixIcon: Icon(
-                  Icons.check_circle,
-                ),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF6200EE)),
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // Respond to button press
-              },
-              child: Text('Calculate'),
-            ),
-            SizedBox(height: 8.0),
-            ElevatedButton.icon(
-              onPressed: () {
-                // Respond to button press
-              },
-              icon: Icon(Icons.add, size: 18),
-              label: Text("Reset"),
-            ),
+              Expanded(
+                  child: TextFormField(
+                initialValue: '',
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.allow(
+                      RegExp(r'^(\d+)?\.?\d{0,2}'))
+                ],
+                decoration: InputDecoration(
+                    labelText: 'Rate',
+                    labelStyle: TextStyle(
+                      color: Color(0xFF6200EE),
+                    ),
+                    suffixIcon: Icon(
+                      Icons.check_circle,
+                    ),
+                    border: OutlineInputBorder()),
+              ))
+            ]),
+            Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: <Widget>[
+                  Expanded(
+                    child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // Respond to button press
+                          },
+                          child: Text('Calculate'),
+                        )),
+                  ),
+                  Expanded(
+                      child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              // Respond to button press
+                            },
+                            icon: Icon(Icons.add, size: 18),
+                            label: Text("Reset"),
+                          )))
+                ])
           ],
         ),
       ),
