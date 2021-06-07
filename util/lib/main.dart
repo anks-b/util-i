@@ -46,12 +46,14 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   int _counter = 0;
   DateTime _fromDate = DateTime.now();
   TextEditingController fromDateControl = TextEditingController();
   TextEditingController toDateControl = TextEditingController();
   DateTime _toDate = DateTime.now();
+
+  late TabController _tabController;
 
   Future<DateTime?> _selectDate(DateTime? dt) async {
     final DateTime? newDate = await showDatePicker(
@@ -97,6 +99,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
@@ -109,64 +117,97 @@ class _MyHomePageState extends State<MyHomePage> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs:  <Widget>[
+            Tab(
+              icon: Icon(Icons.cloud_outlined),
+            ),
+            Tab(
+              icon: Icon(Icons.beach_access_sharp),
+            ),
+            Tab(
+              icon: Icon(Icons.brightness_5_sharp),
+            ),
+          ],
+        ),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            TextFormField(
-              maxLength: 20,
-              onTap: _setFromDate,
-              controller: fromDateControl,
-              decoration: InputDecoration(
-                labelText: 'From Date',
-                labelStyle: TextStyle(
-                  color: Color(0xFF6200EE),
-                ),
-                border: OutlineInputBorder(),
-                suffixIcon: Icon(
-                  Icons.check_circle,
-                ),
-              ),
-            ),
-            TextFormField(
-              controller: toDateControl,
-              maxLength: 20,
-              onTap: _setToDate,
-              decoration: InputDecoration(
-                labelText: 'To Date',
-                labelStyle: TextStyle(
-                  color: Color(0xFF6200EE),
-                ),
-                border: OutlineInputBorder(),
-                suffixIcon: Icon(
-                  Icons.check_circle,
+      body: TabBarView(
+        controller: _tabController,
+        children:  <Widget>[
+          Column(
+            // Column is also a layout widget. It takes a list of children and
+            // arranges them vertically. By default, it sizes itself to fit its
+            // children horizontally, and tries to be as tall as its parent.
+            //
+            // Invoke "debug painting" (press "p" in the console, choose the
+            // "Toggle Debug Paint" action from the Flutter Inspector in Android
+            // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+            // to see the wireframe for each widget.
+            //
+            // Column has various properties to control how it sizes itself and
+            // how it positions its children. Here we use mainAxisAlignment to
+            // center the children vertically; the main axis here is the vertical
+            // axis because Columns are vertical (the cross axis would be
+            // horizontal).
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: <Widget>[
+              TextFormField(
+                maxLength: 20,
+                onTap: _setFromDate,
+                controller: fromDateControl,
+                decoration: InputDecoration(
+                  labelText: 'From Date',
+                  labelStyle: TextStyle(
+                    color: Color(0xFF6200EE),
+                  ),
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(
+                    Icons.check_circle,
+                  ),
                 ),
               ),
-            ),
-            Row(children: <Widget>[
-              Expanded(
-                child: TextFormField(
+              TextFormField(
+                controller: toDateControl,
+                maxLength: 20,
+                onTap: _setToDate,
+                decoration: InputDecoration(
+                  labelText: 'To Date',
+                  labelStyle: TextStyle(
+                    color: Color(0xFF6200EE),
+                  ),
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(
+                    Icons.check_circle,
+                  ),
+                ),
+              ),
+              Row(children: <Widget>[
+                Expanded(
+                  child: TextFormField(
+                    initialValue: '',
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                        labelText: 'Amount',
+                        labelStyle: TextStyle(
+                          color: Color(0xFF6200EE),
+                        ),
+                        suffixIcon: Icon(
+                          Icons.check_circle,
+                        ),
+                        border: OutlineInputBorder()),
+                  ),
+                ),
+                Expanded(
+                    child: TextFormField(
                   initialValue: '',
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r'^(\d+)?\.?\d{0,2}'))
+                  ],
                   decoration: InputDecoration(
-                      labelText: 'Amount',
+                      labelText: 'Rate',
                       labelStyle: TextStyle(
                         color: Color(0xFF6200EE),
                       ),
@@ -174,53 +215,42 @@ class _MyHomePageState extends State<MyHomePage> {
                         Icons.check_circle,
                       ),
                       border: OutlineInputBorder()),
-                ),
-              ),
-              Expanded(
-                  child: TextFormField(
-                initialValue: '',
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.allow(
-                      RegExp(r'^(\d+)?\.?\d{0,2}'))
-                ],
-                decoration: InputDecoration(
-                    labelText: 'Rate',
-                    labelStyle: TextStyle(
-                      color: Color(0xFF6200EE),
-                    ),
-                    suffixIcon: Icon(
-                      Icons.check_circle,
-                    ),
-                    border: OutlineInputBorder()),
-              ))
-            ]),
-            Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  Expanded(
-                    child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // Respond to button press
-                          },
-                          child: Text('Calculate'),
-                        )),
-                  ),
-                  Expanded(
+                ))
+              ]),
+              Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: <Widget>[
+                    Expanded(
                       child: Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: ElevatedButton.icon(
+                          child: ElevatedButton(
                             onPressed: () {
                               // Respond to button press
                             },
-                            icon: Icon(Icons.add, size: 18),
-                            label: Text("Reset"),
-                          )))
-                ])
-          ],
-        ),
+                            child: Text('Calculate'),
+                          )),
+                    ),
+                    Expanded(
+                        child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                // Respond to button press
+                              },
+                              icon: Icon(Icons.add, size: 18),
+                              label: Text("Reset"),
+                            )))
+                  ])
+            ],
+          ),
+          
+          Center(
+            child: Text("It's rainy here"),
+          ),
+          Center(
+            child: Text("It's sunny here"),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
