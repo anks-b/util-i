@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -48,10 +50,28 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   int _counter = 0;
+  int _amount = 0;
+  double _interestRate = 0;
+  int daysPartOfDuration = 0;
+  int monthsPartOfDuration = 0;
+  int yearsPartOfDuration = 0;
   DateTime _fromDate = DateTime.now();
   TextEditingController fromDateControl = TextEditingController();
   TextEditingController toDateControl = TextEditingController();
   DateTime _toDate = DateTime.now();
+  String duration = 'days';
+  String interest = '0';
+  String total = '9';
+
+  String lblduration = '';
+  String lblinterest = '';
+  String lbltotal = '';
+  String lblamount = '';
+
+  String lblDurationPerMonth = '';
+  String lblInterestPerMonth = '';
+  String lblTotalPerMonth = '';
+  String lblAmountPerMonth = '';
 
   late TabController _tabController;
 
@@ -87,6 +107,70 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     }
   }
 
+  void calculate() {
+//  tday = parseInt(document.getElementById("tday").value);
+//  tmonth = parseInt(document.getElementById("tmonth").value);
+//  tyear = parseInt(document.getElementById("tyear").value);
+
+//  fday = parseInt(document.getElementById("fday").value);
+//  fmonth = parseInt(document.getElementById("fmonth").value);
+//  fyear = parseInt(document.getElementById("fyear").value);
+
+//   interestRate = parseFloat(document.getElementById("interest").value);
+//   amount = parseInt(document.getElementById("amount").value);
+log('callculate time');
+    if (_toDate.year < _fromDate.year) {
+      // alert
+      // document.getElementById("message").innerHTML="Date not Valid";
+
+      return;
+    }
+    log('callculate time');
+    calculateTimeDuaration();
+    log('clculate interest');
+    var interest = calculateInterest();
+
+    var total = _amount + interest;
+    lblduration =
+        (yearsPartOfDuration != 0 ? "$yearsPartOfDuration Years " : '') +
+            (monthsPartOfDuration != 0 ? "$monthsPartOfDuration Months " : '') +
+            (daysPartOfDuration != 0 ? "$daysPartOfDuration Days " : '');
+
+    lblamount = _amount.toString();
+    lbltotal = total.toString();
+    lblinterest = interest.toString();
+  }
+
+  void calculateTimeDuaration() {
+    var monthsOfToDate = _toDate.month;
+    var yearsofToDate = _toDate.year;
+
+    if (_toDate.day < _fromDate.day) {
+      daysPartOfDuration = (_toDate.day + 30) - _fromDate.day;
+      monthsOfToDate--;
+    } else {
+      daysPartOfDuration = _toDate.day - _fromDate.day;
+    }
+
+    if (monthsOfToDate < _fromDate.month) {
+      monthsPartOfDuration = (monthsOfToDate + 12) - _fromDate.month;
+      yearsofToDate--;
+    } else {
+      monthsPartOfDuration = monthsOfToDate - _fromDate.month;
+    }
+
+    yearsPartOfDuration = yearsofToDate - _fromDate.year;
+  }
+
+  double calculateInterest() {
+    var rPerAmt = (_amount / 100) * (_interestRate / 30);
+
+    return ((yearsPartOfDuration * 12 * 30) +
+            (monthsPartOfDuration * 30) +
+            daysPartOfDuration) *
+        rPerAmt;
+  }
+
   void _incrementCounter() {
     setState(() {
       // This call to setState tells the Flutter framework that something has
@@ -119,13 +203,11 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         title: Text(widget.title),
         bottom: TabBar(
           controller: _tabController,
-          tabs:  <Widget>[
+          tabs: <Widget>[
             Tab(
-              icon: Icon(Icons.cloud_outlined),
+              icon: Icon(Icons.calculate_outlined),
             ),
-            Tab(
-              icon: Icon(Icons.beach_access_sharp),
-            ),
+            Tab(icon: Icon(Icons.sticky_note_2)),
             Tab(
               icon: Icon(Icons.brightness_5_sharp),
             ),
@@ -134,7 +216,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       ),
       body: TabBarView(
         controller: _tabController,
-        children:  <Widget>[
+        children: <Widget>[
           Column(
             // Column is also a layout widget. It takes a list of children and
             // arranges them vertically. By default, it sizes itself to fit its
@@ -196,6 +278,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                           Icons.check_circle,
                         ),
                         border: OutlineInputBorder()),
+                   onChanged: (value) => _amount = int.parse(value), 
                   ),
                 ),
                 Expanded(
@@ -215,8 +298,47 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                         Icons.check_circle,
                       ),
                       border: OutlineInputBorder()),
+                  onChanged: (value) => _interestRate = double.parse(value), 
                 ))
               ]),
+              Row(
+                children: <Widget>[
+                  Expanded(child: Text("Time ")),
+                  Expanded(
+                    child: Text(lblduration),
+                  )
+                ],
+              ),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text("Amount "),
+                  ),
+                  Expanded(
+                    child: Text(lblamount),
+                  )
+                ],
+              ),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text("Interest"),
+                  ),
+                  Expanded(
+                    child: Text(lblinterest),
+                  )
+                ],
+              ),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text("Total "),
+                  ),
+                  Expanded(
+                    child: Text(lbltotal),
+                  )
+                ],
+              ),
               Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: <Widget>[
@@ -224,9 +346,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                       child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: ElevatedButton(
-                            onPressed: () {
-                              // Respond to button press
-                            },
+                            onPressed: calculate,
                             child: Text('Calculate'),
                           )),
                     ),
@@ -243,7 +363,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   ])
             ],
           ),
-          
           Center(
             child: Text("It's rainy here"),
           ),
