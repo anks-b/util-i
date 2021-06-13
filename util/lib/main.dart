@@ -3,6 +3,11 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:intl/intl.dart';
+import 'package:util/InterestModel.dart';
+
+import 'database.dart';
+
 void main() {
   runApp(MyApp());
 }
@@ -55,12 +60,17 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   int daysPartOfDuration = 0;
   int monthsPartOfDuration = 0;
   int yearsPartOfDuration = 0;
+  int numberOfMonths = 0;
   DateTime _fromDate = DateTime.now();
   TextEditingController fromDateControl = TextEditingController();
   TextEditingController toDateControl = TextEditingController();
+  TextEditingController amountControl = TextEditingController();
+  TextEditingController interestRateControl = TextEditingController();
+
   DateTime _toDate = DateTime.now();
   String duration = 'days';
-  String interest = '0';
+  double interest = 0;
+  double interestPerMonth = 0;
   String total = '9';
 
   String lblduration = '';
@@ -74,6 +84,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   String lblAmountPerMonth = '';
 
   late TabController _tabController;
+
+  final List<String> entries = <String>['A', 'B', 'C'];
+  final List<int> colorCodes = <int>[600, 500, 100];
 
   Future<DateTime?> _selectDate(DateTime? dt) async {
     final DateTime? newDate = await showDatePicker(
@@ -95,7 +108,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     DateTime? dt = await _selectDate(_fromDate);
     if (dt != null) {
       _fromDate = dt;
-      fromDateControl.text = _fromDate.toString();
+      fromDateControl.text = DateFormat("MMM d yyyy EEE").format(_fromDate);
     }
   }
 
@@ -103,11 +116,11 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     DateTime? dt = await _selectDate(_toDate);
     if (dt != null) {
       _toDate = dt;
-      toDateControl.text = _toDate.toString();
+      toDateControl.text = DateFormat("MMM d yyyy EEE").format(_toDate);
     }
   }
 
-  void calculate() {
+  Future<void> calculate() async {
 //  tday = parseInt(document.getElementById("tday").value);
 //  tmonth = parseInt(document.getElementById("tmonth").value);
 //  tyear = parseInt(document.getElementById("tyear").value);
@@ -118,7 +131,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
 //   interestRate = parseFloat(document.getElementById("interest").value);
 //   amount = parseInt(document.getElementById("amount").value);
-log('callculate time');
+    log('callculate time');
     if (_toDate.year < _fromDate.year) {
       // alert
       // document.getElementById("message").innerHTML="Date not Valid";
@@ -131,14 +144,36 @@ log('callculate time');
     var interest = calculateInterest();
 
     var total = _amount + interest;
-    lblduration =
-        (yearsPartOfDuration != 0 ? "$yearsPartOfDuration Years " : '') +
-            (monthsPartOfDuration != 0 ? "$monthsPartOfDuration Months " : '') +
-            (daysPartOfDuration != 0 ? "$daysPartOfDuration Days " : '');
 
-    lblamount = _amount.toString();
-    lbltotal = total.toString();
-    lblinterest = interest.toString();
+    setState(() {
+      lblduration = (yearsPartOfDuration != 0
+              ? "$yearsPartOfDuration Years "
+              : '') +
+          (monthsPartOfDuration != 0 ? "$monthsPartOfDuration Months " : '') +
+          (daysPartOfDuration != 0 ? "$daysPartOfDuration Days " : '');
+
+      lblamount = _amount.toString();
+      lbltotal = total.toString();
+      lblinterest = interest.toString();
+      numberOfMonths++;
+      lblDurationPerMonth = '$numberOfMonths Month';
+      lblInterestPerMonth = interestPerMonth.toString();
+      lblTotalPerMonth = (_amount + interestPerMonth).toString();
+      lblAmountPerMonth = '';
+    });
+
+    // insert history record
+    final db = await DBProvider.db;
+    InterestHistory rc = new InterestHistory(
+      id: 0,
+      fromDate: DateFormat("MM-dd-yyyy").format(_toDate),
+      toDate: DateFormat("MM-dd-yyyy").format(_toDate),
+      amount: int.parse(_amount.toString()),
+      rate: int.parse(_interestRate.toString()),
+      total: int.parse(total.toString()),
+    );
+
+    var id = await db.addInterestHistory(rc);
   }
 
   void calculateTimeDuaration() {
@@ -164,15 +199,46 @@ log('callculate time');
 
   double calculateInterest() {
     var rPerAmt = (_amount / 100) * (_interestRate / 30);
-
+    interestPerMonth = rPerAmt * 30;
     return ((yearsPartOfDuration * 12 * 30) +
             (monthsPartOfDuration * 30) +
             daysPartOfDuration) *
         rPerAmt;
   }
 
-  void _incrementCounter() {
+  void reset() {
     setState(() {
+      _amount = 0;
+      _interestRate = 0;
+      _fromDate = new DateTime.now();
+      _toDate = new DateTime.now();
+      fromDateControl.clear();
+      toDateControl.clear();
+      amountControl.clear();
+      interestRateControl.clear();
+      lblduration = "";
+      lblamount = "";
+      lbltotal = "";
+      lblinterest = "";
+      lblDurationPerMonth = '';
+      lblInterestPerMonth = '';
+      lblTotalPerMonth = '';
+      lblAmountPerMonth = '';
+      numberOfMonths = 0;
+    });
+  }
+
+  void _incrementCounter() {
+    if (numberOfMonths == 0) {
+      return;
+    }
+    setState(() {
+      lblDurationPerMonth = numberOfMonths == 1
+          ? "$numberOfMonths Month"
+          : " $numberOfMonths Months";
+      var intst = numberOfMonths * interestPerMonth;
+      lblInterestPerMonth = intst.toString();
+      lblTotalPerMonth = (_amount + intst).toString();
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
       // so that the display can reflect the updated values. If we changed
@@ -267,8 +333,8 @@ log('callculate time');
               Row(children: <Widget>[
                 Expanded(
                   child: TextFormField(
-                    initialValue: '',
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    controller: amountControl,
                     decoration: InputDecoration(
                         labelText: 'Amount',
                         labelStyle: TextStyle(
@@ -278,17 +344,17 @@ log('callculate time');
                           Icons.check_circle,
                         ),
                         border: OutlineInputBorder()),
-                   onChanged: (value) => _amount = int.parse(value), 
+                    onChanged: (value) => _amount = int.parse(value),
                   ),
                 ),
                 Expanded(
                     child: TextFormField(
-                  initialValue: '',
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: <TextInputFormatter>[
                     FilteringTextInputFormatter.allow(
                         RegExp(r'^(\d+)?\.?\d{0,2}'))
                   ],
+                  controller: interestRateControl,
                   decoration: InputDecoration(
                       labelText: 'Rate',
                       labelStyle: TextStyle(
@@ -298,7 +364,7 @@ log('callculate time');
                         Icons.check_circle,
                       ),
                       border: OutlineInputBorder()),
-                  onChanged: (value) => _interestRate = double.parse(value), 
+                  onChanged: (value) => _interestRate = double.parse(value),
                 ))
               ]),
               Row(
@@ -339,6 +405,50 @@ log('callculate time');
                   )
                 ],
               ),
+              Divider(
+                height: 20,
+                thickness: 5,
+                indent: 20,
+                endIndent: 20,
+              ),
+              Row(
+                children: <Widget>[
+                  Expanded(child: Text("Time ")),
+                  Expanded(
+                    child: Text(lblDurationPerMonth),
+                  )
+                ],
+              ),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text("Amount "),
+                  ),
+                  Expanded(
+                    child: Text(lblamount),
+                  )
+                ],
+              ),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text("Interest"),
+                  ),
+                  Expanded(
+                    child: Text(lblInterestPerMonth),
+                  )
+                ],
+              ),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text("Total "),
+                  ),
+                  Expanded(
+                    child: Text(lblTotalPerMonth),
+                  )
+                ],
+              ),
               Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: <Widget>[
@@ -354,9 +464,7 @@ log('callculate time');
                         child: Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: ElevatedButton.icon(
-                              onPressed: () {
-                                // Respond to button press
-                              },
+                              onPressed: reset,
                               icon: Icon(Icons.add, size: 18),
                               label: Text("Reset"),
                             )))
@@ -364,7 +472,39 @@ log('callculate time');
             ],
           ),
           Center(
-            child: Text("It's rainy here"),
+            child: FutureBuilder<List<InterestHistory>>(
+        future: DBProvider.db.getAllHistory(),
+        builder: (BuildContext context, AsyncSnapshot<List<InterestHistory>> snapshot) {
+          if (snapshot.hasData) {
+            return ListView.builder(
+              itemCount: snapshot.data != null ? snapshot.data?.length: 0,
+              itemBuilder: (BuildContext context, int index) {
+                InterestHistory item =  (snapshot.data as dynamic)[index];
+                return Dismissible(
+                  key: UniqueKey(),
+                  background: Container(color: Colors.red),
+                  onDismissed: (direction) {
+                    DBProvider.db.deleteClient(item.id);
+                  },
+                  child: ListTile(
+                    title: Text(item.fromDate),
+                    leading: Text(item.id.toString()),
+                    trailing: Checkbox(
+                      onChanged: (bool? value) {
+                        //DBProvider.db.blockOrUnblock(item);
+                        // setState(() {});
+                      },
+                      value: true,
+                    ),
+                  ),
+                );
+              },
+            );
+          } else {
+            return Center(child: CircularProgressIndicator());
+          }
+        },
+      )
           ),
           Center(
             child: Text("It's sunny here"),

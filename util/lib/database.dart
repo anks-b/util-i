@@ -13,7 +13,7 @@ class DBProvider {
 
   static final DBProvider db = DBProvider._();
 
-  late Database _database;
+  late Database _database;  
 
   Future<Database> get database async {
     if (_database != null) return _database;
@@ -70,7 +70,7 @@ class DBProvider {
   //   return res;
   // }
 
-  getInterest(int id) async {
+  getHistoryById(int id) async {
     final db = await database;
     var res = await db.query("Client", where: "id = ?", whereArgs: [id]);
     return res.isNotEmpty ? InterestHistory.fromMap(res.first) : null;
@@ -88,7 +88,7 @@ class DBProvider {
   //   return list;
   // }
 
-  Future<List<InterestHistory>> getAllClients() async {
+  Future<List<InterestHistory>> getAllHistory() async {
     final db = await database;
     var res = await db.query("InterestHistory");
     List<InterestHistory> list =
