@@ -87,6 +87,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   final List<String> entries = <String>['A', 'B', 'C'];
   final List<int> colorCodes = <int>[600, 500, 100];
+  var provider = new DBProvider();
+ 
 
   Future<DateTime?> _selectDate(DateTime? dt) async {
     final DateTime? newDate = await showDatePicker(
@@ -163,7 +165,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     });
 
     // insert history record
-    final db = await DBProvider.db;
+    // final db = await DBProvider.db;
     InterestHistory rc = new InterestHistory(
       id: 0,
       fromDate: DateFormat("MM-dd-yyyy").format(_toDate),
@@ -172,8 +174,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       rate: int.parse(_interestRate.toString()),
       total: int.parse(total.toString()),
     );
-
-    var id = await db.addInterestHistory(rc);
+    var provider= new DBProvider();
+    var id = await provider.addInterestHistory(rc);
   }
 
   void calculateTimeDuaration() {
@@ -473,7 +475,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           ),
           Center(
             child: FutureBuilder<List<InterestHistory>>(
-        future: DBProvider.db.getAllHistory(),
+        future: provider.getAllHistory(),
         builder: (BuildContext context, AsyncSnapshot<List<InterestHistory>> snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(
@@ -484,7 +486,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   key: UniqueKey(),
                   background: Container(color: Colors.red),
                   onDismissed: (direction) {
-                    DBProvider.db.deleteClient(item.id);
+                    // DBProvider.db.deleteClient(item.id);
                   },
                   child: ListTile(
                     title: Text(item.fromDate),

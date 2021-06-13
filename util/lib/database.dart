@@ -9,18 +9,31 @@ import 'package:sqflite/sqflite.dart';
 import 'InterestModel.dart';
 
 class DBProvider {
-  DBProvider._();
+  // DBProvider._();
 
-  static final DBProvider db = DBProvider._();
+  // static final DBProvider db = DBProvider._();
 
-  late Database _database;  
+  // static late Database? _database;  
 
-  Future<Database> get database async {
-    if (_database != null) return _database;
-    // if _database is null we instantiate it
+  static final DBProvider _instance = new DBProvider.internal();
+  factory DBProvider() => _instance;
+  static Database? _database;
+  Future<Database?> get database async {
+    if (_database != null) {
+      return _database;
+    }
     _database = await initDB();
     return _database;
   }
+  DBProvider.internal();
+
+
+  // Future<Database?> get database async {
+  //   if (_database != null) return _database;
+  //   // if _database is null we instantiate it
+  //   _database;
+  //   return _database;
+  // }
 
   initDB() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
@@ -41,7 +54,7 @@ class DBProvider {
   addInterestHistory(InterestHistory newClient) async {
     final db = await database;
     //get the biggest id in the table
-    var table = await db.rawQuery("SELECT MAX(id)+1 as id FROM InterestHistory");
+    var table = await db!.rawQuery("SELECT MAX(id)+1 as id FROM InterestHistory");
     int id = table.first["id"] as int;
     //insert to the table using the new id
     var raw = await db.rawInsert(
@@ -72,7 +85,7 @@ class DBProvider {
 
   getHistoryById(int id) async {
     final db = await database;
-    var res = await db.query("Client", where: "id = ?", whereArgs: [id]);
+    var res = await db!.query("Client", where: "id = ?", whereArgs: [id]);
     return res.isNotEmpty ? InterestHistory.fromMap(res.first) : null;
   }
 
@@ -90,7 +103,7 @@ class DBProvider {
 
   Future<List<InterestHistory>> getAllHistory() async {
     final db = await database;
-    var res = await db.query("InterestHistory");
+    var res = await db!.query("InterestHistory");
     List<InterestHistory> list =
         res.isNotEmpty ? res.map((c) => InterestHistory.fromMap(c)).toList() : [];
     return list;
@@ -98,7 +111,7 @@ class DBProvider {
 
   deleteClient(int id) async {
     final db = await database;
-    return db.delete("InterestHistory", where: "id = ?", whereArgs: [id]);
+    return db!.delete("InterestHistory", where: "id = ?", whereArgs: [id]);
   }
 
   // deleteAll() async {
