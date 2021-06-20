@@ -60,6 +60,11 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
+class AlwaysDisabledFocusNode extends FocusNode {
+  @override
+  bool get hasFocus => false;
+}
+
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   int _counter = 0;
   int _amount = 0;
@@ -70,6 +75,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   int numberOfMonths = 0;
   DateTime _fromDate = DateTime.now();
   TextEditingController fromDateControl = TextEditingController();
+  TextEditingController formTitleControl = TextEditingController();
   TextEditingController toDateControl = TextEditingController();
   TextEditingController amountControl = TextEditingController();
   TextEditingController interestRateControl = TextEditingController();
@@ -95,7 +101,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   final List<String> entries = <String>['A', 'B', 'C'];
   final List<int> colorCodes = <int>[600, 500, 100];
   var provider = new DBProvider();
- 
 
   Future<DateTime?> _selectDate(DateTime? dt, BuildContext context) async {
     final DateTime? newDate = await showDatePicker(
@@ -154,15 +159,16 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
     var total = _amount + interest;
 
-   InterestHistory rc = new InterestHistory(
+    InterestHistory rc = new InterestHistory(
       id: 0,
+      title: formTitleControl.text,
       fromDate: DateFormat("MM-dd-yyyy").format(_toDate),
       toDate: DateFormat("MM-dd-yyyy").format(_toDate),
       amount: int.parse(_amount.toString()),
       rate: double.parse(_interestRate.toString()),
       total: double.parse(total.toString()),
     );
-    var provider= new DBProvider();
+    var provider = new DBProvider();
     var id = await provider.addInterestHistory(rc);
 
     setState(() {
@@ -175,7 +181,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       lblamount = _amount.toString();
       lbltotal = total.toString();
       lblinterest = interest.toString();
-      numberOfMonths++;
+      numberOfMonths = 1;
       lblDurationPerMonth = '$numberOfMonths Month';
       lblInterestPerMonth = interestPerMonth.toString();
       lblTotalPerMonth = (_amount + interestPerMonth).toString();
@@ -184,7 +190,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
     // insert history record
     // final db = await DBProvider.db;
- 
   }
 
   void calculateTimeDuaration() {
@@ -225,6 +230,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       _toDate = new DateTime.now();
       fromDateControl.clear();
       toDateControl.clear();
+      formTitleControl.clear();
       amountControl.clear();
       interestRateControl.clear();
       lblduration = "";
@@ -244,9 +250,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       return;
     }
     setState(() {
-      lblDurationPerMonth = numberOfMonths == 1
-          ? "$numberOfMonths Month"
-          : " $numberOfMonths Months";
+      lblDurationPerMonth = "$numberOfMonths Months";
       var intst = numberOfMonths * interestPerMonth;
       lblInterestPerMonth = intst.toString();
       lblTotalPerMonth = (_amount + intst).toString();
@@ -312,8 +316,21 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.start,
             children: <Widget>[
               TextFormField(
-                maxLength: 20,
+                controller: formTitleControl,
+                decoration: InputDecoration(
+                  labelText: 'Note',
+                  labelStyle: TextStyle(
+                    color: Color(0xFF6200EE),
+                  ),
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(
+                    Icons.check_circle,
+                  ),
+                ),
+              ),
+              TextFormField(
                 onTap: () => _setFromDate(context),
+                focusNode: new AlwaysDisabledFocusNode(),
                 controller: fromDateControl,
                 decoration: InputDecoration(
                   labelText: 'From Date',
@@ -328,8 +345,8 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               ),
               TextFormField(
                 controller: toDateControl,
-                maxLength: 20,
                 onTap: () => _setToDate(context),
+                focusNode: new AlwaysDisabledFocusNode(),
                 decoration: InputDecoration(
                   labelText: 'To Date',
                   labelStyle: TextStyle(
@@ -344,6 +361,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               Row(children: <Widget>[
                 Expanded(
                   child: TextFormField(
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     controller: amountControl,
                     decoration: InputDecoration(
@@ -483,43 +501,52 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             ],
           ),
           Center(
-            child: FutureBuilder<List<InterestHistory>>(
-        future: provider.getAllHistory(),
-        builder: (BuildContext context, AsyncSnapshot<List<InterestHistory>> snapshot) {
-          if (snapshot.hasData) {
-            return ListView.builder(
-              itemCount: snapshot.data != null ? snapshot.data?.length: 0,
-              itemBuilder: (BuildContext context, int index) {
-                InterestHistory item =  (snapshot.data as dynamic)[index];
-                return Dismissible(
-                  key: UniqueKey(),
-                  background: Container(color: Colors.red),
-                  onDismissed: (direction) {
-                    // DBProvider.db.deleteClient(item.id);
-                  },
-                  child: ListTile(
-                    title: Text(item.fromDate),
-                    leading: Text(item.id.toString()),
-                    subtitle: Text('Amount:'+ item.amount.toString() +' Rate:'+ item.rate.toString() + 'Total:' + item.total.toString()),
-                    trailing: Checkbox(
-                      onChanged: (bool? value) {
-                        //DBProvider.db.blockOrUnblock(item);
-                        // setState(() {});
+              child: FutureBuilder<List<InterestHistory>>(
+            future: provider.getAllHistory(),
+            builder: (BuildContext context,
+                AsyncSnapshot<List<InterestHistory>> snapshot) {
+              if (snapshot.hasData) {
+                return ListView.builder(
+                  itemCount: snapshot.data != null ? snapshot.data?.length : 0,
+                  itemBuilder: (BuildContext context, int index) {
+                    InterestHistory item = (snapshot.data as dynamic)[index];
+                    return Dismissible(
+                      key: UniqueKey(),
+                      background: Container(color: Colors.red),
+                      onDismissed: (direction) {
+                        // DBProvider.db.deleteClient(item.id);
                       },
-                      value: false,
-                    ),
-                  ),
+                      child: Card(
+                          child: ListTile(
+                        title: Text(item.title.toString() +
+                            ' : ' +
+                            item.fromDate.toString()),
+                        leading: Text(item.id.toString()),
+                        subtitle: Text('Amount:' +
+                            item.amount.toString() +
+                            ' Rate:' +
+                            item.rate.toString() +
+                            'Total:' +
+                            item.total.toString()),
+                        isThreeLine: true,
+                        trailing: Checkbox(
+                          onChanged: (bool? value) {
+                            //DBProvider.db.blockOrUnblock(item);
+                            // setState(() {});
+                          },
+                          value: false,
+                        ),
+                      )),
+                    );
+                  },
                 );
-              },
-            );
-          } else {
-            return Center(child: CircularProgressIndicator());
-          }
-        },
-      )
-          ),
+              } else {
+                return Center(child: CircularProgressIndicator());
+              }
+            },
+          )),
           Center(
-            child: Text("It's sunny here"),
+            child: Text("coming soon"),
           ),
         ],
       ),

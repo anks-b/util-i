@@ -15,6 +15,7 @@ String interestHistoryToJson(InterestHistory data) {
 
 class InterestHistory {
    int id = 0;
+   String title;
    String fromDate;
    String toDate;
    int amount;
@@ -23,6 +24,7 @@ class InterestHistory {
 
   InterestHistory({    
     required this.id,
+    required this.title,
     required this.fromDate,
     required this.toDate,    
     required this.amount,
@@ -32,6 +34,7 @@ class InterestHistory {
 
   factory InterestHistory.fromMap(Map<String, dynamic> json) => new InterestHistory(
         id: json["id"] as int,
+        title: json["title"],
         fromDate: json["from_date"],
         toDate: json["to_date"],
         amount: json["amount"],
@@ -41,6 +44,7 @@ class InterestHistory {
 
   Map<String, dynamic> toMap() => {
         "id": id,
+        "title": title,
         "from_date": fromDate,
         "to_date": toDate,
         "amount": amount,

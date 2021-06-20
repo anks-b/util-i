@@ -45,6 +45,7 @@ class DBProvider {
         onCreate: (Database db, int version) async {
       await db.execute("CREATE TABLE InterestHistory ("
           "id INTEGER PRIMARY KEY,"
+          "title TEXT,"
           "from_date TEXT,"
           "to_date TEXT,"
           "amount INTEGER,"
@@ -71,9 +72,9 @@ class DBProvider {
     int id = table.first["id"] as int;
     //insert to the table using the new id
     var raw = await db.rawInsert(
-        "INSERT Into InterestHistory (id, from_date, to_date, amount, rate, total)"
-        " VALUES (?,?,?,?,?,?)",
-        [id, newClient.fromDate, newClient.toDate, newClient.amount, newClient.rate, newClient.total]);
+        "INSERT Into InterestHistory (id, title, from_date, to_date, amount, rate, total)"
+        " VALUES (?,?,?,?,?,?,?)",
+        [id, newClient.title, newClient.fromDate, newClient.toDate, newClient.amount, newClient.rate, newClient.total]);
     return raw;
   }
 
