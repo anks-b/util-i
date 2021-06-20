@@ -134,7 +134,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> calculate() async {
+  Future<void> calculate({bool isEdit = false}) async {
 //  tday = parseInt(document.getElementById("tday").value);
 //  tmonth = parseInt(document.getElementById("tmonth").value);
 //  tyear = parseInt(document.getElementById("tyear").value);
@@ -162,14 +162,16 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     InterestHistory rc = new InterestHistory(
       id: 0,
       title: formTitleControl.text,
-      fromDate: DateFormat("MM-dd-yyyy").format(_toDate),
-      toDate: DateFormat("MM-dd-yyyy").format(_toDate),
+      fromDate: DateFormat("yyyy-MM-dd").format(_fromDate),
+      toDate: DateFormat("yyyy-MM-dd").format(_toDate),
       amount: int.parse(_amount.toString()),
       rate: double.parse(_interestRate.toString()),
       total: double.parse(total.toString()),
     );
+    if(!isEdit){
     var provider = new DBProvider();
     var id = await provider.addInterestHistory(rc);
+    }
 
     setState(() {
       lblduration = (yearsPartOfDuration != 0
@@ -178,13 +180,18 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           (monthsPartOfDuration != 0 ? "$monthsPartOfDuration Months " : '') +
           (daysPartOfDuration != 0 ? "$daysPartOfDuration Days " : '');
 
-      lblamount = _amount.toString();
-      lbltotal = total.toString();
-      lblinterest = interest.toString();
+      lblamount = NumberFormat.currency(locale: 'en_IN', symbol: '\u20b9')
+          .format(_amount);
+      lbltotal = NumberFormat.currency(locale: 'en_IN', symbol: '\u20b9')
+          .format(total);
+      lblinterest = NumberFormat.currency(locale: 'en_IN', symbol: '\u20b9')
+          .format(interest);
       numberOfMonths = 1;
       lblDurationPerMonth = '$numberOfMonths Month';
       lblInterestPerMonth = interestPerMonth.toString();
-      lblTotalPerMonth = (_amount + interestPerMonth).toString();
+      lblTotalPerMonth =
+          NumberFormat.currency(locale: 'en_IN', symbol: '\u20b9')
+              .format(_amount + interestPerMonth);
       lblAmountPerMonth = '';
     });
 
@@ -221,6 +228,22 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             daysPartOfDuration) *
         rPerAmt;
   }
+  void eidtHistory(InterestHistory item){
+    _tabController.animateTo(0);
+    _interestRate =  item.rate;
+    _amount = item.amount;   
+    _fromDate = DateTime.parse(item.fromDate);
+    _toDate = DateTime.parse(item.toDate);
+    fromDateControl.text = DateFormat("MMM d yyyy EEE").format(_fromDate);
+    toDateControl.text = DateFormat("MMM d yyyy EEE").format(_toDate); 
+    formTitleControl.text = item.title;
+    amountControl.text = item.amount.toString();
+    interestRateControl.text = item.rate.toString();
+    lblamount = item.amount.toString();    
+    this.calculate(isEdit: true);
+
+
+  }
 
   void reset() {
     setState(() {
@@ -249,11 +272,16 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     if (numberOfMonths == 0) {
       return;
     }
+    numberOfMonths++;
     setState(() {
       lblDurationPerMonth = "$numberOfMonths Months";
       var intst = numberOfMonths * interestPerMonth;
-      lblInterestPerMonth = intst.toString();
-      lblTotalPerMonth = (_amount + intst).toString();
+      lblInterestPerMonth =
+          NumberFormat.currency(locale: 'en_IN', symbol: '\u20b9')
+              .format(intst);
+      lblTotalPerMonth =
+          NumberFormat.currency(locale: 'en_IN', symbol: '\u20b9')
+              .format(_amount + intst);
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
       // so that the display can reflect the updated values. If we changed
@@ -298,207 +326,225 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
       body: TabBarView(
         controller: _tabController,
         children: <Widget>[
-          Column(
-            // Column is also a layout widget. It takes a list of children and
-            // arranges them vertically. By default, it sizes itself to fit its
-            // children horizontally, and tries to be as tall as its parent.
-            //
-            // Invoke "debug painting" (press "p" in the console, choose the
-            // "Toggle Debug Paint" action from the Flutter Inspector in Android
-            // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-            // to see the wireframe for each widget.
-            //
-            // Column has various properties to control how it sizes itself and
-            // how it positions its children. Here we use mainAxisAlignment to
-            // center the children vertically; the main axis here is the vertical
-            // axis because Columns are vertical (the cross axis would be
-            // horizontal).
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: <Widget>[
-              TextFormField(
-                controller: formTitleControl,
-                decoration: InputDecoration(
-                  labelText: 'Note',
-                  labelStyle: TextStyle(
-                    color: Color(0xFF6200EE),
-                  ),
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(
-                    Icons.check_circle,
-                  ),
-                ),
-              ),
-              TextFormField(
-                onTap: () => _setFromDate(context),
-                focusNode: new AlwaysDisabledFocusNode(),
-                controller: fromDateControl,
-                decoration: InputDecoration(
-                  labelText: 'From Date',
-                  labelStyle: TextStyle(
-                    color: Color(0xFF6200EE),
-                  ),
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(
-                    Icons.check_circle,
-                  ),
-                ),
-              ),
-              TextFormField(
-                controller: toDateControl,
-                onTap: () => _setToDate(context),
-                focusNode: new AlwaysDisabledFocusNode(),
-                decoration: InputDecoration(
-                  labelText: 'To Date',
-                  labelStyle: TextStyle(
-                    color: Color(0xFF6200EE),
-                  ),
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(
-                    Icons.check_circle,
-                  ),
-                ),
-              ),
-              Row(children: <Widget>[
-                Expanded(
-                  child: TextFormField(
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    controller: amountControl,
-                    decoration: InputDecoration(
-                        labelText: 'Amount',
-                        labelStyle: TextStyle(
-                          color: Color(0xFF6200EE),
-                        ),
-                        suffixIcon: Icon(
-                          Icons.check_circle,
-                        ),
-                        border: OutlineInputBorder()),
-                    onChanged: (value) => _amount = int.parse(value),
-                  ),
-                ),
-                Expanded(
-                    child: TextFormField(
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: <TextInputFormatter>[
-                    FilteringTextInputFormatter.allow(
-                        RegExp(r'^(\d+)?\.?\d{0,2}'))
-                  ],
-                  controller: interestRateControl,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8.0, 7.0, 7.0, 0.0),
+            child: Column(
+              // Column is also a layout widget. It takes a list of children and
+              // arranges them vertically. By default, it sizes itself to fit its
+              // children horizontally, and tries to be as tall as its parent.
+              //
+              // Invoke "debug painting" (press "p" in the console, choose the
+              // "Toggle Debug Paint" action from the Flutter Inspector in Android
+              // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+              // to see the wireframe for each widget.
+              //
+              // Column has various properties to control how it sizes itself and
+              // how it positions its children. Here we use mainAxisAlignment to
+              // center the children vertically; the main axis here is the vertical
+              // axis because Columns are vertical (the cross axis would be
+              // horizontal).
+
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceAround, // mainAxisAlignment
+              children: <Widget>[
+                TextFormField(
+                  controller: formTitleControl,
                   decoration: InputDecoration(
-                      labelText: 'Rate',
-                      labelStyle: TextStyle(
-                        color: Color(0xFF6200EE),
-                      ),
-                      suffixIcon: Icon(
-                        Icons.check_circle,
-                      ),
-                      border: OutlineInputBorder()),
-                  onChanged: (value) => _interestRate = double.parse(value),
-                ))
-              ]),
-              Row(
-                children: <Widget>[
-                  Expanded(child: Text("Time ")),
+                    labelText: 'Title',
+                    hintText: 'Given to some xyz',
+                    labelStyle: TextStyle(
+                      color: Color(0xFF6200EE),
+                    ),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                TextFormField(
+                  onTap: () => _setFromDate(context),
+                  focusNode: new AlwaysDisabledFocusNode(),
+                  controller: fromDateControl,
+                  decoration: InputDecoration(
+                    labelText: 'From Date',
+                    labelStyle: TextStyle(
+                      color: Color(0xFF6200EE),
+                    ),
+                    border: OutlineInputBorder(),
+                    // suffixIcon: Icon(
+                    //   Icons.check_circle,
+                    // ),
+                  ),
+                ),
+                TextFormField(
+                  controller: toDateControl,
+                  onTap: () => _setToDate(context),
+                  focusNode: new AlwaysDisabledFocusNode(),
+                  decoration: InputDecoration(
+                    labelText: 'To Date',
+                    labelStyle: TextStyle(
+                      color: Color(0xFF6200EE),
+                    ),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                Row(children: <Widget>[
                   Expanded(
-                    child: Text(lblduration),
-                  )
-                ],
-              ),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text("Amount "),
+                    child: TextFormField(
+                        keyboardType:
+                            TextInputType.numberWithOptions(decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                        controller: amountControl,
+                        decoration: InputDecoration(
+                            labelText: 'Amount',
+                            hintText: NumberFormat.currency(
+                                    locale: 'en_IN', symbol: '\u20b9')
+                                .format(10000),
+                            labelStyle: TextStyle(
+                              color: Color(0xFF6200EE),
+                            ),
+                            border: OutlineInputBorder()),
+                        onChanged: (value) => _amount = int.parse(value)),
+                    flex: 3,
                   ),
                   Expanded(
-                    child: Text(lblamount),
+                    child: TextFormField(
+                      keyboardType:
+                          TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: <TextInputFormatter>[
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'^(\d+)?\.?\d{0,2}'))
+                      ],
+                      controller: interestRateControl,
+                      decoration: InputDecoration(
+                          labelText: 'Rate',
+                          labelStyle: TextStyle(
+                            color: Color(0xFF6200EE),
+                          ),
+                          border: OutlineInputBorder()),
+                      onChanged: (value) => _interestRate = double.parse(value),
+                    ),
+                    flex: 1,
                   )
-                ],
-              ),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text("Interest"),
-                  ),
-                  Expanded(
-                    child: Text(lblinterest),
-                  )
-                ],
-              ),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text("Total "),
-                  ),
-                  Expanded(
-                    child: Text(lbltotal),
-                  )
-                ],
-              ),
-              Divider(
-                height: 20,
-                thickness: 5,
-                indent: 20,
-                endIndent: 20,
-              ),
-              Row(
-                children: <Widget>[
-                  Expanded(child: Text("Time ")),
-                  Expanded(
-                    child: Text(lblDurationPerMonth),
-                  )
-                ],
-              ),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text("Amount "),
-                  ),
-                  Expanded(
-                    child: Text(lblamount),
-                  )
-                ],
-              ),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text("Interest"),
-                  ),
-                  Expanded(
-                    child: Text(lblInterestPerMonth),
-                  )
-                ],
-              ),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text("Total "),
-                  ),
-                  Expanded(
-                    child: Text(lblTotalPerMonth),
-                  )
-                ],
-              ),
-              Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                ]),
+                Row(
+                  children: <Widget>[
+                    Expanded(child: Text("Time ")),
+                    Expanded(
+                      child: Text(lblduration),
+                    )
+                  ],
+                ),
+                Row(
                   children: <Widget>[
                     Expanded(
-                      child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: ElevatedButton(
-                            onPressed: calculate,
-                            child: Text('Calculate'),
-                          )),
+                      child: Text("Amount "),
                     ),
                     Expanded(
+                      child: Text(lblamount),
+                    )
+                  ],
+                ),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text("Interest"),
+                    ),
+                    Expanded(
+                      child: Text(lblinterest),
+                    )
+                  ],
+                ),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text("Total "),
+                    ),
+                    Expanded(
+                      child: Text(lbltotal),
+                    )
+                  ],
+                ),
+                Divider(
+                  height: 20,
+                  thickness: 5,
+                  indent: 20,
+                  endIndent: 20,
+                ),
+                Row(
+                  children: <Widget>[
+                    Expanded(child: Text("Time ")),
+                    Expanded(
+                      child: Text(lblDurationPerMonth),
+                    )
+                  ],
+                ),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text("Amount "),
+                    ),
+                    Expanded(
+                      child: Text(lblamount),
+                    )
+                  ],
+                ),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text("Interest"),
+                    ),
+                    Expanded(
+                      child: Text(lblInterestPerMonth),
+                    )
+                  ],
+                ),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text("Total "),
+                    ),
+                    Expanded(
+                      child: Text(lblTotalPerMonth),
+                    )
+                  ],
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(flex: 2, child: Text(" ")),
+                    Expanded(
+                      flex: 3,
+                      child: Text(""),
+                    ),
+                    FloatingActionButton(
+                      onPressed: _incrementCounter,
+                      tooltip: 'Increment',
+                      child: Icon(Icons.add),
+                    )
+                  ],
+                ),
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: <Widget>[
+                      Expanded(
                         child: Padding(
                             padding: const EdgeInsets.all(16.0),
-                            child: ElevatedButton.icon(
-                              onPressed: reset,
-                              icon: Icon(Icons.add, size: 18),
-                              label: Text("Reset"),
-                            )))
-                  ])
-            ],
+                            child: ElevatedButton(
+                              onPressed: calculate,
+                              child: Text('Calculate'),
+                            )),
+                      ),
+                      Expanded(
+                          child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: ElevatedButton.icon(
+                                onPressed: reset,
+                                icon: Icon(Icons.add, size: 18),
+                                label: Text("Reset"),
+                              )))
+                    ])
+              ],
+            ),
           ),
           Center(
               child: FutureBuilder<List<InterestHistory>>(
@@ -517,26 +563,45 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                         // DBProvider.db.deleteClient(item.id);
                       },
                       child: Card(
-                          child: ListTile(
-                        title: Text(item.title.toString() +
-                            ' : ' +
-                            item.fromDate.toString()),
-                        leading: Text(item.id.toString()),
-                        subtitle: Text('Amount:' +
-                            item.amount.toString() +
-                            ' Rate:' +
-                            item.rate.toString() +
-                            'Total:' +
-                            item.total.toString()),
-                        isThreeLine: true,
-                        trailing: Checkbox(
-                          onChanged: (bool? value) {
-                            //DBProvider.db.blockOrUnblock(item);
-                            // setState(() {});
-                          },
-                          value: false,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(                               
+                                child: ListTile(
+                                    title: Text(item.title.toString() +
+                                        ' : ' +
+                                        item.fromDate.toString()),
+                                    leading: Text(item.id.toString()),
+                                    subtitle: Text('Amount:' +
+                                        item.amount.toString() +
+                                        '  Rate:' +
+                                        item.rate.toString() +
+                                        ' Total:' +
+                                        item.total.toString()),
+                                    isThreeLine: true,
+                                    trailing: Wrap(
+                                      spacing: 12, // space between two icons
+                                      children: <Widget>[
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                          ),
+                                          tooltip: 'Edit item',
+                                          iconSize: 30,
+                                          onPressed: () => eidtHistory(item) // Switch tabs                                          
+                                        ),                                        
+                                        /* Checkbox(
+                                          onChanged: (bool? value) {
+                                            //DBProvider.db.blockOrUnblock(item);
+                                            // setState(() {});
+                                          },
+                                          value: false,
+                                        ), */
+                                      ],
+                                    ))),
+                          ],
                         ),
-                      )),
+                      ),
                     );
                   },
                 );
@@ -550,11 +615,6 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
