@@ -1,6 +1,12 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
+
+import 'package:path/path.dart';
+
 import 'package:flutter/services.dart';
 
 import 'package:intl/intl.dart';
@@ -9,6 +15,7 @@ import 'package:util/InterestModel.dart';
 import 'database.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(MyApp());
 }
 
@@ -90,7 +97,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   var provider = new DBProvider();
  
 
-  Future<DateTime?> _selectDate(DateTime? dt) async {
+  Future<DateTime?> _selectDate(DateTime? dt, BuildContext context) async {
     final DateTime? newDate = await showDatePicker(
       context: context,
       initialDate: (dt != null ? dt : DateTime.now()),
@@ -106,16 +113,16 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     return newDate;
   }
 
-  void _setFromDate() async {
-    DateTime? dt = await _selectDate(_fromDate);
+  void _setFromDate(BuildContext context) async {
+    DateTime? dt = await _selectDate(_fromDate, context);
     if (dt != null) {
       _fromDate = dt;
       fromDateControl.text = DateFormat("MMM d yyyy EEE").format(_fromDate);
     }
   }
 
-  void _setToDate() async {
-    DateTime? dt = await _selectDate(_toDate);
+  void _setToDate(BuildContext context) async {
+    DateTime? dt = await _selectDate(_toDate, context);
     if (dt != null) {
       _toDate = dt;
       toDateControl.text = DateFormat("MMM d yyyy EEE").format(_toDate);
@@ -147,6 +154,17 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
     var total = _amount + interest;
 
+   InterestHistory rc = new InterestHistory(
+      id: 0,
+      fromDate: DateFormat("MM-dd-yyyy").format(_toDate),
+      toDate: DateFormat("MM-dd-yyyy").format(_toDate),
+      amount: int.parse(_amount.toString()),
+      rate: double.parse(_interestRate.toString()),
+      total: double.parse(total.toString()),
+    );
+    var provider= new DBProvider();
+    var id = await provider.addInterestHistory(rc);
+
     setState(() {
       lblduration = (yearsPartOfDuration != 0
               ? "$yearsPartOfDuration Years "
@@ -166,16 +184,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
     // insert history record
     // final db = await DBProvider.db;
-    InterestHistory rc = new InterestHistory(
-      id: 0,
-      fromDate: DateFormat("MM-dd-yyyy").format(_toDate),
-      toDate: DateFormat("MM-dd-yyyy").format(_toDate),
-      amount: int.parse(_amount.toString()),
-      rate: int.parse(_interestRate.toString()),
-      total: int.parse(total.toString()),
-    );
-    var provider= new DBProvider();
-    var id = await provider.addInterestHistory(rc);
+ 
   }
 
   void calculateTimeDuaration() {
@@ -304,7 +313,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             children: <Widget>[
               TextFormField(
                 maxLength: 20,
-                onTap: _setFromDate,
+                onTap: () => _setFromDate(context),
                 controller: fromDateControl,
                 decoration: InputDecoration(
                   labelText: 'From Date',
@@ -320,7 +329,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
               TextFormField(
                 controller: toDateControl,
                 maxLength: 20,
-                onTap: _setToDate,
+                onTap: () => _setToDate(context),
                 decoration: InputDecoration(
                   labelText: 'To Date',
                   labelStyle: TextStyle(
@@ -491,12 +500,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                   child: ListTile(
                     title: Text(item.fromDate),
                     leading: Text(item.id.toString()),
+                    subtitle: Text('Amount:'+ item.amount.toString() +' Rate:'+ item.rate.toString() + 'Total:' + item.total.toString()),
                     trailing: Checkbox(
                       onChanged: (bool? value) {
                         //DBProvider.db.blockOrUnblock(item);
                         // setState(() {});
                       },
-                      value: true,
+                      value: false,
                     ),
                   ),
                 );

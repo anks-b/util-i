@@ -7,6 +7,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'InterestModel.dart';
+import 'package:platform/platform.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+ 
 
 class DBProvider {
   // DBProvider._();
@@ -45,16 +48,26 @@ class DBProvider {
           "from_date TEXT,"
           "to_date TEXT,"
           "amount INTEGER,"
-          "rate INTEGER,"
-          "total INTEGER,"          
+          "rate REAL,"
+          "total REAL"          
           ")");
     });
   }
 
+//   Future<Directory> getApplicationDocumentsDirectory() async {
+    
+//   final String? path = await platform getApplicationDocumentsPath();
+//   if (path == null) {
+//     throw MissingPlatformDirectoryException(
+//         'Unable to get application documents directory');
+//   }
+//   return Directory(path);
+// }
+
   addInterestHistory(InterestHistory newClient) async {
     final db = await database;
     //get the biggest id in the table
-    var table = await db!.rawQuery("SELECT MAX(id)+1 as id FROM InterestHistory");
+    var table = await db!.rawQuery("SELECT COALESCE(MAX(id), 0) + 1 as id FROM InterestHistory");
     int id = table.first["id"] as int;
     //insert to the table using the new id
     var raw = await db.rawInsert(
@@ -104,8 +117,16 @@ class DBProvider {
   Future<List<InterestHistory>> getAllHistory() async {
     final db = await database;
     var res = await db!.query("InterestHistory");
-    List<InterestHistory> list =
-        res.isNotEmpty ? res.map((c) => InterestHistory.fromMap(c)).toList() : [];
+    List<InterestHistory> list;
+    if (res.isNotEmpty) {
+      list = res.map( (c) { 
+        //c["rate"] = double.parse(c["rate"].toString());
+        // c["total"] = double.parse(c["total"].toString());
+        return InterestHistory.fromMap(c); 
+        }).toList();
+    } else {
+      list = [];
+    }
     return list;
   }
 

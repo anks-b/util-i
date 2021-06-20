@@ -18,8 +18,8 @@ class InterestHistory {
    String fromDate;
    String toDate;
    int amount;
-   int rate;
-   int total;
+   double rate;
+   double total;
 
   InterestHistory({    
     required this.id,
@@ -35,8 +35,8 @@ class InterestHistory {
         fromDate: json["from_date"],
         toDate: json["to_date"],
         amount: json["amount"],
-        rate: json["rate"],
-        total: json["total"],
+        rate: double.parse(json["rate"].toString()),
+        total: double.parse(json["total"].toString()),
       );
 
   Map<String, dynamic> toMap() => {
